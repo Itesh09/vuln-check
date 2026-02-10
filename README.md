@@ -151,24 +151,7 @@ vuln-check/
 
 ## 📋 Example Reports
 
-### Successful Scan (Secure)
-```
-==================================================
-SCAN REPORT FOR: https://juice-shop.herokuapp.com
-Scan ID: 82a862c0-6c6f-4fe1-ad60-58b7f4c0f6cb
-Timestamp: 2026-02-06T09:07:54.008586
-==================================================
---- Risk Summary ---
-Overall Risk Level: INFO
-Total Risk Score: 0
-Severity Breakdown:
-Recommendation: Review high and critical vulnerabilities first.
---- Vulnerability Details ---
-No significant vulnerabilities detected.
---- AI Insights ---
-Summary: AI analysis confirms no vulnerabilities were detected.
-==================================================
-```
+
 
 ### Vulnerability Found
 ```
