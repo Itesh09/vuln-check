@@ -1,0 +1,67 @@
+# Git and GitHub
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (keep README.md)
+AGENTS.md
+memorybase.md
+*.md
+!README.md
+
+# Python cache and venv
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+env/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+test_*.py
+simple_scan_demo.py
+red.txt
+
+# Logs and runtime
+*.log
+*.pid
+
+# Database files
+*.sqlite
+*.db
+
+# Temporary files
+*.tmp
+*.temp
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Docker specific
+docker-compose.yml
+docker-compose.override.yml
+
+# Configuration files with secrets
+.env
+.env.local
+.env.production
+
+# Coverage reports
+coverage/
+.nyc_output
+
+# Node modules (if any)
+node_modules/

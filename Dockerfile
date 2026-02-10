@@ -15,11 +15,15 @@ RUN apt-get update && apt-get install -y \
     g++ \
     libssl-dev \
     libffi-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+RUN python3 -m pip install --upgrade pip \
+    && python3 -m pip install --no-cache-dir -r requirements.txt
+
 
 # Copy application code
 COPY . .
@@ -33,7 +37,7 @@ EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python main.py --help || exit 1
+    CMD curl -f http://localhost:5000/ || exit 1
 
 # Default command
 CMD ["python", "main.py", "--run-server"]

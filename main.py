@@ -97,16 +97,9 @@ def main():
         run_cli_scan(args.url)
     elif args.run_server:
         app = create_app()
-        # Register blueprints
-        from app.blueprints.scan_routes import scan_bp
-        from app.blueprints.auth_routes import auth_bp
-        from app.blueprints.report_routes import report_bp
-        app.register_blueprint(scan_bp)
-        app.register_blueprint(auth_bp)
-        app.register_blueprint(report_bp)
 
         print(f"Running Flask server on http://{args.host}:{args.port}")
-        app.run(host=args.host, port=args.port)
+        app.run(host='0.0.0.0', port=args.port)
     else:
         parser.print_help()
 

@@ -223,7 +223,7 @@ export VULNCHECK_CONCURRENT=5
 ### Development Setup
 ```bash
 # Clone repository
-git clone https://github.com/itesh19/vuln-check.git
+git clone https://github.com/Itesh09/vuln-check.git
 cd vuln-check
 
 # Create virtual environment
