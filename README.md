@@ -261,22 +261,6 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 - **Python Community**: Security testing libraries and tools
 - **Security Researchers**: Vulnerability detection techniques and patterns
 
-## 📞 Support
-
-### Documentation
-- [Usage Guide](docs/usage.md)
-- [API Documentation](docs/api.md)
-- [Development Guide](docs/development.md)
-
-### Issues
-- [Bug Reports](https://github.com/itesh19/vuln-check/issues)
-- [Feature Requests](https://github.com/yourusername/vuln-check/issues)
-- [Security Issues](https://github.com/yourusername/vuln-check/security)
-
-### Community
-- [Discussions](https://github.com/yourusername/vuln-check/discussions)
-- [Wiki](https://github.com/yourusername/vuln-check/wiki)
 
 ---
 
-**🔒 Security First, 🧠 Intelligence-Driven, 🚀 Production-Ready**
