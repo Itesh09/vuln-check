@@ -2,9 +2,12 @@ from flask import Flask
 import os
 
 def create_app():
-    # Set template folder to be at project root
-    template_folder = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates')
-    app = Flask(__name__, template_folder=template_folder)
+    # Set template and static folders
+    base_dir = os.path.dirname(os.path.dirname(__file__))
+    template_folder = os.path.join(base_dir, 'templates')
+    static_folder = os.path.join(base_dir, 'static')
+    
+    app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 
     # Load configuration
     app.config.from_object('app.config.base.Config')

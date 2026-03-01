@@ -3,97 +3,2723 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vulnerability Scanner</title>
+    <title>VulnCheck - Professional Vulnerability Scanner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="/static/firebase-config.js"></script>
+    <script src="/static/auth-service.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
-        .container { text-align: center; }
-        .scan-form { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        input[type="url"] { width: 70%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; }
-        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #0056b3; }
-        .result { margin: 20px 0; text-align: left; }
-        .vulnerability { background: #fff3cd; padding: 10px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #ffc107; }
-        .high { border-left-color: #dc3545; background: #f8d7da; }
-        .medium { border-left-color: #ffc107; background: #fff3cd; }
-        .low { border-left-color: #28a745; background: #d4edda; }
+        :root {
+            --primary-blue: #1E3A8A;
+            --primary-blue-hover: #1e40af;
+            --accent-green: #10B981;
+            --accent-green-hover: #059669;
+            --warning-orange: #F59E0B;
+            --danger-red: #EF4444;
+            --neutral-100: #F9FAFB;
+            --neutral-200: #F3F4F6;
+            --neutral-300: #E5E7EB;
+            --neutral-400: #9CA3AF;
+            --neutral-500: #6B7280;
+            --neutral-600: #4B5563;
+            --neutral-700: #374151;
+            --neutral-800: #1F2937;
+            --neutral-900: #111827;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius: 8px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: var(--neutral-100);
+            color: var(--neutral-700);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4, h5, h6 {
+            color: var(--neutral-900);
+            font-weight: 700;
+        }
+
+        a {
+            color: var(--primary-blue);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        a:hover {
+            color: var(--primary-blue-hover);
+        }
+
+        /* Navigation */
+        .navbar {
+            background: white;
+            border-bottom: 1px solid var(--neutral-300);
+            padding: 0 24px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary-blue);
+        }
+
+        .navbar-brand svg {
+            width: 32px;
+            height: 32px;
+        }
+
+        .navbar-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .navbar-links a {
+            color: var(--neutral-600);
+            font-weight: 500;
+            padding: 8px 0;
+            position: relative;
+        }
+
+        .navbar-links a:hover,
+        .navbar-links a.active {
+            color: var(--primary-blue);
+        }
+
+        .navbar-links a.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--primary-blue);
+            border-radius: 2px;
+        }
+
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: var(--radius);
+            font-weight: 500;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-blue-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-accent {
+            background: var(--accent-green);
+            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+        }
+
+        .btn-accent:hover {
+            background: var(--accent-green-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--neutral-300);
+            color: var(--neutral-700);
+        }
+
+        .btn-outline:hover {
+            background: var(--neutral-200);
+            border-color: var(--neutral-400);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--neutral-900) 0%, var(--primary-blue) 100%);
+            color: white;
+            padding: 80px 24px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            opacity: 0.5;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-size: 48px;
+            color: white;
+            margin-bottom: 16px;
+            letter-spacing: -0.02em;
+        }
+
+        .hero p {
+            font-size: 20px;
+            color: var(--neutral-300);
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-note {
+            font-size: 14px;
+            color: var(--neutral-400);
+            margin-top: 16px;
+        }
+
+        .hero-note span {
+            color: var(--accent-green);
+        }
+
+        /* Scan Form Card */
+        .scan-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 32px;
+            box-shadow: var(--shadow-lg);
+            max-width: 700px;
+            margin: -40px auto 0;
+            position: relative;
+            z-index: 10;
+        }
+
+        .scan-form {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .scan-input-group {
+            flex: 1;
+            min-width: 280px;
+        }
+
+        .scan-input-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--neutral-300);
+            border-radius: var(--radius);
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.2s;
+            background: var(--neutral-100);
+        }
+
+        .scan-input-group input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            background: white;
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.15);
+        }
+
+        .scan-mode-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .scan-mode-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--neutral-500);
+            text-align: left;
+        }
+
+        .scan-mode-select {
+            padding: 12px 16px;
+            border: 2px solid var(--neutral-300);
+            border-radius: var(--radius);
+            font-size: 14px;
+            font-family: inherit;
+            background: var(--neutral-100);
+            cursor: pointer;
+            min-width: 180px;
+            transition: all 0.2s;
+        }
+
+        .scan-mode-select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            background: white;
+        }
+
+        .mode-tooltip {
+            font-size: 11px;
+            color: var(--neutral-500);
+            margin-top: 4px;
+        }
+
+        /* Trust Bar */
+        .trust-bar {
+            background: var(--neutral-200);
+            padding: 24px;
+            text-align: center;
+        }
+
+        .trust-bar p {
+            color: var(--neutral-500);
+            font-size: 14px;
+            margin-bottom: 16px;
+        }
+
+        .trust-badges {
+            display: flex;
+            justify-content: center;
+            gap: 32px;
+            flex-wrap: wrap;
+        }
+
+        .trust-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--neutral-600);
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .trust-badge svg {
+            width: 20px;
+            height: 20px;
+            color: var(--accent-green);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .section-header h2 {
+            font-size: 32px;
+            margin-bottom: 12px;
+        }
+
+        .section-header p {
+            color: var(--neutral-500);
+            font-size: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            border: 1px solid var(--neutral-200);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-blue);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(30, 58, 138, 0.1);
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .feature-icon svg {
+            width: 24px;
+            height: 24px;
+            color: var(--primary-blue);
+        }
+
+        .feature-card h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .feature-card p {
+            color: var(--neutral-500);
+            font-size: 14px;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            background: white;
+            padding: 80px 24px;
+        }
+
+        .steps-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 32px;
+            position: relative;
+        }
+
+        .steps-container::before {
+            content: '';
+            position: absolute;
+            top: 40px;
+            left: 15%;
+            right: 15%;
+            height: 2px;
+            background: var(--neutral-300);
+        }
+
+        .step {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-number {
+            width: 80px;
+            height: 80px;
+            background: var(--primary-blue);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0 auto 16px;
+        }
+
+        .step h3 {
+            margin-bottom: 8px;
+        }
+
+        .step p {
+            color: var(--neutral-500);
+            font-size: 14px;
+        }
+
+        /* Results Section */
+        .results-section {
+            padding: 40px 24px;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .results-header h2 {
+            font-size: 24px;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        /* Summary Cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .summary-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--neutral-200);
+        }
+
+        .summary-card h4 {
+            font-size: 13px;
+            color: var(--neutral-500);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .summary-card .value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--neutral-900);
+        }
+
+        .summary-card.critical .value { color: var(--danger-red); }
+        .summary-card.high .value { color: var(--warning-orange); }
+        .summary-card.medium .value { color: #EAB308; }
+        .summary-card.low .value { color: var(--accent-green); }
+
+        /* Chart Container */
+        .chart-container {
+            background: white;
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--neutral-200);
+            margin-bottom: 24px;
+        }
+
+        .chart-container h3 {
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+
+        .chart-wrapper {
+            display: flex;
+            gap: 32px;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chart-wrapper canvas {
+            max-width: 250px;
+            max-height: 250px;
+        }
+
+        .health-score {
+            text-align: center;
+        }
+
+        .health-score .score {
+            font-size: 64px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .health-score .score.good { color: var(--accent-green); }
+        .health-score .score.warning { color: var(--warning-orange); }
+        .health-score .score.danger { color: var(--danger-red); }
+
+        .health-score .label {
+            font-size: 14px;
+            color: var(--neutral-500);
+            margin-top: 8px;
+        }
+
+        /* Vulnerability List */
+        .vuln-list {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--neutral-200);
+            overflow: hidden;
+        }
+
+        .vuln-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--neutral-200);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+
+        .vuln-item:last-child {
+            border-bottom: none;
+        }
+
+        .vuln-item:hover {
+            background: var(--neutral-100);
+        }
+
+        .severity-pill {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .severity-pill.critical {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-red);
+        }
+
+        .severity-pill.high {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-orange);
+        }
+
+        .severity-pill.medium {
+            background: rgba(234, 179, 8, 0.1);
+            color: #CA8A04;
+        }
+
+        .severity-pill.low {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+        }
+
+        .severity-pill.info {
+            background: rgba(30, 58, 138, 0.1);
+            color: var(--primary-blue);
+        }
+
+        .vuln-info {
+            flex: 1;
+        }
+
+        .vuln-info h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .vuln-info p {
+            font-size: 13px;
+            color: var(--neutral-500);
+        }
+
+        .vuln-confidence {
+            font-size: 12px;
+            color: var(--neutral-500);
+            text-align: right;
+        }
+
+        .vuln-expand {
+            color: var(--neutral-400);
+        }
+
+        .vuln-details {
+            display: none;
+            padding: 16px 20px;
+            background: var(--neutral-100);
+            border-top: 1px solid var(--neutral-200);
+        }
+
+        .vuln-details.active {
+            display: block;
+        }
+
+        .vuln-details h5 {
+            font-size: 13px;
+            color: var(--neutral-500);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .vuln-details pre {
+            background: var(--neutral-800);
+            color: var(--neutral-200);
+            padding: 12px;
+            border-radius: var(--radius);
+            font-size: 12px;
+            overflow-x: auto;
+            margin-bottom: 12px;
+        }
+
+        .vuln-details .recommendation {
+            background: white;
+            padding: 12px;
+            border-radius: var(--radius);
+            border-left: 3px solid var(--accent-green);
+            font-size: 14px;
+        }
+
+        /* Loading State */
+        .loading-container {
+            display: none;
+            text-align: center;
+            padding: 60px 24px;
+        }
+
+        .loading-container.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--neutral-300);
+            border-top-color: var(--primary-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        .btn-accent .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        .btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .loading-text {
+            color: var(--neutral-600);
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .loading-subtext {
+            color: var(--neutral-400);
+            font-size: 14px;
+        }
+
+        /* Footer */
+        .footer {
+            background: var(--neutral-900);
+            color: var(--neutral-400);
+            padding: 48px 24px 24px;
+            margin-top: auto;
+        }
+
+        .footer-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+
+        .footer-brand {
+            color: white;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-brand svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .footer p {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .footer h4 {
+            color: white;
+            font-size: 14px;
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-links {
+            list-style: none;
+        }
+
+        .footer-links li {
+            margin-bottom: 8px;
+        }
+
+        .footer-links a {
+            color: var(--neutral-400);
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-bottom {
+            border-top: 1px solid var(--neutral-800);
+            padding-top: 24px;
+            text-align: center;
+            font-size: 13px;
+        }
+
+        .footer-trust-badges {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+
+        .footer-trust-badges span {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .footer-trust-badges svg {
+            width: 16px;
+            height: 16px;
+            color: var(--accent-green);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .hero p {
+                font-size: 16px;
+            }
+
+            .navbar-links {
+                display: none;
+            }
+
+            .scan-form {
+                flex-direction: column;
+            }
+
+            .scan-input-group {
+                min-width: 100%;
+            }
+
+            .scan-mode-select {
+                width: 100%;
+            }
+
+            .steps-container {
+                grid-template-columns: 1fr;
+            }
+
+            .steps-container::before {
+                display: none;
+            }
+
+            .results-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .vuln-item {
+                flex-wrap: wrap;
+            }
+
+            .vuln-confidence {
+                width: 100%;
+                text-align: left;
+                margin-top: 8px;
+            }
+        }
+
+        /* User Menu */
+        .user-menu {
+            position: relative;
+        }
+
+        .user-menu-trigger {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: var(--radius);
+            transition: background 0.2s;
+        }
+
+        .user-menu-trigger:hover {
+            background: var(--neutral-200);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .user-avatar svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .user-name {
+            font-weight: 500;
+            color: var(--neutral-700);
+            font-size: 14px;
+        }
+
+        .user-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--neutral-200);
+            min-width: 180px;
+            display: none;
+            z-index: 200;
+            overflow: hidden;
+        }
+
+        .user-dropdown.active {
+            display: block;
+        }
+
+        .user-dropdown a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--neutral-700);
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .user-dropdown a:hover {
+            background: var(--neutral-100);
+            color: var(--neutral-900);
+        }
+
+        .user-dropdown a.logout {
+            color: var(--danger-red);
+        }
+
+        .user-dropdown a.logout:hover {
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background: var(--neutral-200);
+            margin: 4px 0;
+        }
+
+        /* Auth Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: var(--radius);
+            padding: 32px;
+            max-width: 420px;
+            width: 90%;
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.active .modal {
+            transform: translateY(0);
+        }
+
+        .modal h2 {
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .modal p {
+            text-align: center;
+            color: var(--neutral-500);
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--neutral-400);
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--neutral-700);
+            margin-bottom: 6px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--neutral-300);
+            border-radius: var(--radius);
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.15);
+        }
+
+        .social-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .social-divider::before,
+        .social-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--neutral-300);
+        }
+
+        .social-divider span {
+            padding: 0 16px;
+            color: var(--neutral-500);
+            font-size: 13px;
+        }
+
+        .social-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .social-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px;
+            border: 1px solid var(--neutral-300);
+            border-radius: var(--radius);
+            background: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .social-btn:hover {
+            background: var(--neutral-100);
+            border-color: var(--neutral-400);
+        }
+
+        .social-btn.google svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .social-btn.github svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .auth-switch {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: var(--neutral-500);
+        }
+
+        .auth-switch a {
+            color: var(--primary-blue);
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .auth-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-red);
+            padding: 12px;
+            border-radius: var(--radius);
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .auth-error.active {
+            display: block;
+        }
+
+        /* Dashboard Pages */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .dashboard-header {
+            background: white;
+            padding: 24px;
+            border-bottom: 1px solid var(--neutral-200);
+            margin-bottom: 24px;
+        }
+
+        .dashboard-header h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+
+        .dashboard-header p {
+            color: var(--neutral-500);
+            font-size: 14px;
+        }
+
+        .dashboard-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px 48px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--neutral-200);
+        }
+
+        .stat-card h4 {
+            font-size: 13px;
+            color: var(--neutral-500);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--neutral-900);
+        }
+
+        .stat-card.critical .value { color: var(--danger-red); }
+        .stat-card.high .value { color: var(--warning-orange); }
+        .stat-card.success .value { color: var(--accent-green); }
+
+        /* Scans Table */
+        .scans-filters {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .scans-filters input {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 16px;
+            border: 2px solid var(--neutral-300);
+            border-radius: var(--radius);
+            font-size: 14px;
+        }
+
+        .scans-filters select {
+            padding: 10px 16px;
+            border: 2px solid var(--neutral-300);
+            border-radius: var(--radius);
+            font-size: 14px;
+            background: white;
+        }
+
+        .scans-table {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--neutral-200);
+            overflow: hidden;
+        }
+
+        .scans-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .scans-table th,
+        .scans-table td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--neutral-200);
+        }
+
+        .scans-table th {
+            background: var(--neutral-100);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--neutral-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .scans-table tr:hover {
+            background: var(--neutral-100);
+        }
+
+        .scans-table .url-cell {
+            font-family: monospace;
+            font-size: 13px;
+            color: var(--primary-blue);
+        }
+
+        .scan-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .scan-status.completed {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+        }
+
+        .scan-status.running {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3B82F6;
+        }
+
+        .scan-status.failed {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-red);
+        }
+
+        .scan-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .scan-actions button {
+            padding: 6px 10px;
+            font-size: 12px;
+        }
+
+        /* Settings */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .settings-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--neutral-200);
+        }
+
+        .settings-card h3 {
+            font-size: 16px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--neutral-200);
+        }
+
+        .toggle-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--neutral-100);
+        }
+
+        .toggle-group:last-child {
+            border-bottom: none;
+        }
+
+        .toggle-label {
+            font-size: 14px;
+            color: var(--neutral-700);
+        }
+
+        .toggle-label small {
+            display: block;
+            color: var(--neutral-500);
+            font-size: 12px;
+            margin-top: 2px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--neutral-300);
+            border-radius: 26px;
+            transition: 0.3s;
+        }
+
+        .toggle-slider::before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background: white;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--accent-green);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(22px);
+        }
+
+        /* Signup Prompt */
+        .signup-prompt {
+            text-align: center;
+            padding: 32px;
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-top: 24px;
+        }
+
+        .signup-prompt h3 {
+            margin-bottom: 8px;
+        }
+
+        .signup-prompt p {
+            color: var(--neutral-500);
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 480px) {
+            .hero {
+                padding: 48px 16px;
+            }
+
+            .hero h1 {
+                font-size: 28px;
+            }
+
+            .scan-card {
+                padding: 20px;
+                margin: -20px 16px 0;
+            }
+
+            .features {
+                padding: 48px 16px;
+            }
+
+            .summary-cards {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* No Results */
+        .no-vulns {
+            text-align: center;
+            padding: 48px;
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .no-vulns svg {
+            width: 64px;
+            height: 64px;
+            color: var(--accent-green);
+            margin-bottom: 16px;
+        }
+
+        .no-vulns h3 {
+            color: var(--accent-green);
+            margin-bottom: 8px;
+        }
+
+        .no-vulns p {
+            color: var(--neutral-500);
+        }
+
+        /* Mobile Navigation */
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            padding: 8px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔍 Website Vulnerability Scanner</h1>
-        <p>Enter a URL to scan for common security vulnerabilities</p>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <a href="/" class="navbar-brand">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="M9 12l2 2 4-4"/>
+            </svg>
+            VulnCheck
+        </a>
         
-        <div class="scan-form">
-            <form id="scanForm">
-                <input type="url" id="urlInput" placeholder="https://example.com" required>
-                <br>
-                <button type="submit">Start Scan</button>
-            </form>
+        <ul class="navbar-links" id="navLinks">
+            <li><a href="/" class="active" data-page="home">Home</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+        </ul>
+
+        <div class="navbar-actions" id="navActions">
+            <button class="btn btn-outline btn-sm" onclick="showAuthModal('login')">Log In</button>
+            <button class="btn btn-primary btn-sm" onclick="showAuthModal('signup')">Sign Up</button>
         </div>
-        
-        <div id="loading" style="display: none;">
-            <p>⏳ Scanning... This may take a few moments.</p>
+
+        <!-- User Menu (hidden by default) -->
+        <div class="user-menu" id="userMenu" style="display: none;">
+            <button class="user-menu-trigger" onclick="toggleUserDropdown()">
+                <div class="user-avatar" id="userAvatar">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <span class="user-name" id="userName">User</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"/>
+                </svg>
+            </button>
+            <div class="user-dropdown" id="userDropdown">
+                <a href="#" onclick="showPage('dashboard')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/>
+                        <rect x="14" y="3" width="7" height="7"/>
+                        <rect x="14" y="14" width="7" height="7"/>
+                        <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="#" onclick="showPage('scans')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    My Scans
+                </a>
+                <a href="#" onclick="showPage('settings')">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    Settings
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="#" onclick="handleLogout()" class="logout">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16 17 21 12 16 7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    Log Out
+                </a>
+            </div>
         </div>
-        
-        <div id="results" class="result"></div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Your Partner in Digital Safety</h1>
+        <p>Detects all OWASP Top 10 vulnerabilities + 3 additional critical flaws.</p>
+            
+            <div class="scan-card">
+                <form id="scanForm" class="scan-form">
+                    <div class="scan-input-group">
+                        <input type="url" id="urlInput" placeholder="https://example.com" required>
+                    </div>
+                    <div class="scan-mode-group">
+                        <select id="scanMode" class="scan-mode-select">
+                            <option value="fast">Quick Scan (~2 min)</option>
+                            <option value="stealth">Stealth Scan (~5 min)</option>
+                            <option value="deep">Deep Audit (~10 min)</option>
+                        </select>
+                        <p class="mode-tooltip" id="modeTooltip">Fast scan for common vulnerabilities</p>
+                    </div>
+                    <button type="submit" class="btn btn-accent" id="scanBtn">
+                        <span id="scanBtnText">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="M21 21l-4.35-4.35"/>
+                            </svg>
+                            Scan Now
+                        </span>
+                        <span id="scanBtnLoading" style="display: none;">
+                            <svg class="spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10" stroke-dasharray="60" stroke-dashoffset="20"/>
+                            </svg>
+                            Scanning...
+                        </span>
+                    </button>
+                    <button type="button" class="btn btn-outline" onclick="showSampleReport()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                        Sample Report
+                    </button>
+                </form>
+                <p class="hero-note"><span>✓</span> 98% accuracy. No credit card required. Free scan.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Page -->
+    <div class="page" id="dashboardPage">
+        <div class="dashboard-header">
+            <div class="dashboard-content">
+                <h1>Welcome back!</h1>
+                <p>Here's an overview of your security scans</p>
+            </div>
+        </div>
+        <div class="dashboard-content">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Total Scans</h4>
+                    <div class="value" id="totalScans">0</div>
+                </div>
+                <div class="stat-card critical">
+                    <h4>Critical Findings</h4>
+                    <div class="value" id="criticalFindings">0</div>
+                </div>
+                <div class="stat-card high">
+                    <h4>High Findings</h4>
+                    <div class="value" id="highFindings">0</div>
+                </div>
+                <div class="stat-card success">
+                    <h4>Completed Scans</h4>
+                    <div class="value" id="completedScans">0</div>
+                </div>
+            </div>
+            
+            <h3 style="margin-bottom: 16px;">Recent Scans</h3>
+            <div class="vuln-list" id="recentScans">
+                <p style="text-align: center; color: var(--neutral-500); padding: 32px;">Loading...</p>
+            </div>
+            
+            <div style="margin-top: 24px; text-align: center;">
+                <button class="btn btn-primary" onclick="showPage('scans')">View All Scans</button>
+            </div>
+        </div>
     </div>
 
+    <!-- Scans Page -->
+    <div class="page" id="scansPage">
+        <div class="dashboard-header">
+            <div class="dashboard-content">
+                <h1>My Scans</h1>
+                <p>View and manage all your vulnerability scans</p>
+            </div>
+        </div>
+        <div class="dashboard-content">
+            <div class="scans-filters">
+                <input type="text" id="scanSearch" placeholder="Search by URL..." onkeyup="filterScans()">
+                <select id="scanFilter" onchange="filterScans()">
+                    <option value="all">All Status</option>
+                    <option value="completed">Completed</option>
+                    <option value="running">Running</option>
+                    <option value="failed">Failed</option>
+                </select>
+            </div>
+            <div class="scans-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Target URL</th>
+                            <th>Scan Mode</th>
+                            <th>Status</th>
+                            <th>Risk Score</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scansTableBody">
+                        <tr><td colspan="6" style="text-align: center; padding: 32px;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div class="page" id="settingsPage">
+        <div class="dashboard-header">
+            <div class="dashboard-content">
+                <h1>Settings</h1>
+                <p>Manage your account and preferences</p>
+            </div>
+        </div>
+        <div class="dashboard-content">
+            <div class="settings-grid">
+                <div class="settings-card">
+                    <h3>User Profile</h3>
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="settingsName" placeholder="Your name">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="settingsEmail" disabled style="background: var(--neutral-100); color: var(--neutral-500);">
+                    </div>
+                    <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+                </div>
+                
+                <div class="settings-card">
+                    <h3>Notification Preferences</h3>
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            Email Alerts
+                            <small>Receive alerts about security updates</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggleEmailAlerts">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            Scan Completion
+                            <small>Get notified when scans complete</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggleScanCompletion">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-group">
+                        <div class="toggle-label">
+                            Weekly Reports
+                            <small>Receive weekly scan summaries</small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggleWeeklyReports">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trust Bar -->
+    <div class="trust-bar">
+        <p>Full OWASP Top 10 Coverage + 3 Additional Critical Vulnerabilities</p>
+        <div class="trust-badges">
+            <div class="trust-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </svg>
+                SQL Injection
+            </div>
+            <div class="trust-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </svg>
+                XSS
+            </div>
+            <div class="trust-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </svg>
+                SSRF
+            </div>
+            <div class="trust-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </svg>
+                Open Redirect
+            </div>
+            <div class="trust-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </svg>
+                CSRF
+            </div>
+            <div class="trust-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    <path d="M9 12l2 2 4-4"/>
+                </svg>
+                +8 More
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-header">
+            <h2>Powerful Scanning Capabilities</h2>
+            <p>Comprehensive vulnerability detection across 13 critical security categories</p>
+        </div>
+
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <h3>SQL Injection Detection</h3>
+                <p>Detects Union-based, Boolean-blind, Time-based, and Error-based SQL injection vulnerabilities.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <h3>XSS Scanner</h3>
+                <p>Identifies Reflected, Stored, and DOM-based XSS with 2026 payload database and execution verification.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <h3>SSRF Detection</h3>
+                <p>Finds Server-Side Request Forgery vulnerabilities including metadata endpoint access.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <h3>Security Headers Analysis</h3>
+                <p>Checks for HSTS, CSP, X-Frame-Options, X-Content-Type-Options, and 10+ security headers.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <h3>Open Redirect Scanner</h3>
+                <p>Detects URL parameter, form, and JavaScript-based open redirect vulnerabilities.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                </div>
+                <h3>+8 More Vulnerabilities</h3>
+                <p>Also detects SSTI, XXE, NoSQL Injection, CORS, CSRF, SSL/TLS issues, Path Traversal, and JWT flaws.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="section-header">
+            <h2>How It Works</h2>
+            <p>Get started in three simple steps</p>
+        </div>
+
+        <div class="steps-container">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Enter Your URL</h3>
+                <p>Provide the website URL you want to scan. Our system will automatically detect the technology stack.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Automated Scanning</h3>
+                <p>Our scanners test for 13 vulnerability types using intelligent payload selection and proof-based detection.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>View Results</h3>
+                <p>Get a comprehensive report with severity ratings, evidence, and actionable remediation recommendations.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Results Section -->
+    <section class="results-section" id="results">
+        <div class="results-header">
+            <h2 id="resultsTitle">Scan Results</h2>
+            <div class="export-buttons">
+                <button class="btn btn-outline btn-sm" onclick="exportReport('pdf')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    PDF
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="exportReport('csv')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    </svg>
+                    CSV
+                </button>
+                <button class="btn btn-outline btn-sm" onclick="exportReport('json')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    </svg>
+                    JSON
+                </button>
+            </div>
+        </div>
+
+        <div class="summary-cards" id="summaryCards">
+            <!-- Cards populated by JS -->
+        </div>
+
+        <div class="chart-container">
+            <h3>Security Overview</h3>
+            <div class="chart-wrapper">
+                <canvas id="vulnChart"></canvas>
+                <div class="health-score" id="healthScore">
+                    <div class="score good">85</div>
+                    <div class="label">Health Score</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="vuln-list" id="vulnList">
+            <!-- Vulnerabilities populated by JS -->
+        </div>
+    </section>
+
+    <!-- Loading -->
+    <div class="loading-container" id="loading">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">Initializing scan...</div>
+        <div class="loading-subtext">This may take a few minutes depending on scan mode</div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div class="modal-overlay" id="authModal">
+        <div class="modal" style="position: relative;">
+            <button class="modal-close" onclick="closeAuthModal()">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            
+            <!-- Login Form -->
+            <div id="loginForm">
+                <h2>Welcome Back</h2>
+                <p>Sign in to access your scan history</p>
+                
+                <div class="auth-error" id="loginError"></div>
+                
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="loginEmail" required placeholder="you@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="loginPassword" required placeholder="••••••••">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Sign In</button>
+                </form>
+                
+                <div class="social-divider"><span>or continue with</span></div>
+                
+                <div class="social-buttons">
+                    <button class="social-btn google" onclick="handleGoogleLogin()">
+                        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                        Google
+                    </button>
+                    <button class="social-btn github" onclick="handleGithubLogin()">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                        GitHub
+                    </button>
+                </div>
+                
+                <p class="auth-switch">
+                    Don't have an account? <a onclick="showAuthModal('signup')">Sign up</a>
+                </p>
+                <p class="auth-switch">
+                    <a onclick="showForgotPassword()">Forgot password?</a>
+                </p>
+            </div>
+            
+            <!-- Signup Form -->
+            <div id="signupForm" style="display: none;">
+                <h2>Create Account</h2>
+                <p>Start scanning and save your results</p>
+                
+                <div class="auth-error" id="signupError"></div>
+                
+                <form onsubmit="handleSignup(event)">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" id="signupName" required placeholder="John Doe">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="signupEmail" required placeholder="you@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="signupPassword" required placeholder="••••••••" minlength="6">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
+                </form>
+                
+                <div class="social-divider"><span>or continue with</span></div>
+                
+                <div class="social-buttons">
+                    <button class="social-btn google" onclick="handleGoogleSignup()">
+                        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                        Google
+                    </button>
+                    <button class="social-btn github" onclick="handleGithubSignup()">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                        GitHub
+                    </button>
+                </div>
+                
+                <p class="auth-switch">
+                    Already have an account? <a onclick="showAuthModal('login')">Sign in</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div>
+                <div class="footer-brand">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M9 12l2 2 4-4"/>
+                    </svg>
+                    VulnCheck
+                </div>
+                <p>Your partner in digital safety. We help security teams find and fix vulnerabilities before attackers do.</p>
+            </div>
+            <div>
+                <h4>Product</h4>
+                <ul class="footer-links">
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                    <li><a href="#">Pricing</a></li>
+                    <li><a href="#">API</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Resources</h4>
+                <ul class="footer-links">
+                    <li><a href="#">Documentation</a></li>
+                    <li><a href="#">Blog</a></li>
+                    <li><a href="#">Guides</a></li>
+                    <li><a href="#">Community</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Company</h4>
+                <ul class="footer-links">
+                    <li><a href="#">About</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Contact</a></li>
+                    <li><a href="#">Press</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-trust-badges">
+                <span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M9 12l2 2 4-4"/>
+                    </svg>
+                    SSL Secure
+                </span>
+                <span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    HTTPS Only
+                </span>
+                <span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    Fast Scan
+                </span>
+            </div>
+            <p>© 2026 VulnCheck, Inc. All rights reserved.</p>
+            <div style="margin-top: 8px;">
+                <a href="#" style="margin: 0 12px; color: var(--neutral-400); font-size: 13px;">Privacy Policy</a>
+                <a href="#" style="margin: 0 12px; color: var(--neutral-400); font-size: 13px;">Terms of Service</a>
+                <a href="#" style="margin: 0 12px; color: var(--neutral-400); font-size: 13px;">Contact</a>
+            </div>
+            <p style="margin-top: 12px; font-size: 12px; color: var(--neutral-500);">We do not store any sensitive data from your scans. Reports are automatically deleted after 7 days.</p>
+        </div>
+    </footer>
+
     <script>
-        document.getElementById('scanForm').addEventListener('submit', async (e) => {
+        // Global variables
+        let currentScanId = null;
+
+        // Initialize auth state on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            AuthService.init(updateAuthUI);
+        });
+
+        // Update UI based on auth state
+        function updateAuthUI(user) {
+            const navActions = document.getElementById('navActions');
+            const userMenu = document.getElementById('userMenu');
+            const navLinks = document.getElementById('navLinks');
+            
+            if (user) {
+                // Show user menu
+                navActions.style.display = 'none';
+                userMenu.style.display = 'flex';
+                
+                // Update user info
+                document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
+                
+                // Update nav links for logged-in user
+                navLinks.innerHTML = `
+                    <li><a href="#" onclick="showPage('home')" data-page="home">Home</a></li>
+                    <li><a href="#" onclick="showPage('dashboard')" data-page="dashboard">Dashboard</a></li>
+                    <li><a href="#" onclick="showPage('scans')" data-page="scans">Scans</a></li>
+                `;
+            } else {
+                // Show login/signup buttons
+                navActions.style.display = 'flex';
+                userMenu.style.display = 'none';
+                
+                // Reset nav links
+                navLinks.innerHTML = `
+                    <li><a href="#" class="active" data-page="home">Home</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#how-it-works">How It Works</a></li>
+                `;
+            }
+        }
+
+        // Auth modal functions
+        function showAuthModal(type) {
+            const modal = document.getElementById('authModal');
+            const loginForm = document.getElementById('loginForm');
+            const signupForm = document.getElementById('signupForm');
+            
+            modal.classList.add('active');
+            
+            if (type === 'signup') {
+                loginForm.style.display = 'none';
+                signupForm.style.display = 'block';
+            } else {
+                loginForm.style.display = 'block';
+                signupForm.style.display = 'none';
+            }
+            
+            // Clear errors
+            document.getElementById('loginError').classList.remove('active');
+            document.getElementById('signupError').classList.remove('active');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.remove('active');
+        }
+
+        // Auth handlers
+        async function handleLogin(e) {
             e.preventDefault();
-            const url = document.getElementById('urlInput').value;
-            const loading = document.getElementById('loading');
-            const results = document.getElementById('results');
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
             
-            loading.style.display = 'block';
-            results.innerHTML = '';
+            const result = await AuthService.login(email, password);
             
-            try {
-                // For now, use a simple GET request with URL parameter
-                // In future, this would be a proper API call
-                const response = await fetch(`/scan?url=${encodeURIComponent(url)}`);
-                const data = await response.json();
-                
-                loading.style.display = 'none';
-                
-                if (data.error) {
-                    results.innerHTML = `<div class="vulnerability">❌ Error: ${data.error}</div>`;
+            if (result.success) {
+                closeAuthModal();
+                showPage('dashboard');
+            } else {
+                errorEl.textContent = result.error;
+                errorEl.classList.add('active');
+            }
+        }
+
+        async function handleSignup(e) {
+            e.preventDefault();
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const errorEl = document.getElementById('signupError');
+            
+            const result = await AuthService.signup(email, password, name);
+            
+            if (result.success) {
+                closeAuthModal();
+                showPage('dashboard');
+            } else {
+                errorEl.textContent = result.error;
+                errorEl.classList.add('active');
+            }
+        }
+
+        async function handleGoogleLogin() {
+            const result = await AuthService.signInWithGoogle();
+            if (result.success) {
+                closeAuthModal();
+                showPage('dashboard');
+            } else {
+                alert('Error: ' + result.error);
+            }
+        }
+
+        async function handleGoogleSignup() {
+            await handleGoogleLogin();
+        }
+
+        async function handleGithubLogin() {
+            const result = await AuthService.signInWithGithub();
+            if (result.success) {
+                closeAuthModal();
+                showPage('dashboard');
+            } else {
+                alert('Error: ' + result.error);
+            }
+        }
+
+        async function handleGithubSignup() {
+            await handleGithubLogin();
+        }
+
+        async function showForgotPassword() {
+            const email = prompt('Enter your email address:');
+            if (email) {
+                const result = await AuthService.resetPassword(email);
+                if (result.success) {
+                    alert('Password reset email sent! Check your inbox.');
                 } else {
-                    displayResults(data);
+                    alert('Error: ' + result.error);
                 }
-            } catch (error) {
-                loading.style.display = 'none';
-                results.innerHTML = `<div class="vulnerability">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function handleLogout() {
+            await AuthService.logout();
+            showPage('home');
+        }
+
+        // User dropdown
+        function toggleUserDropdown() {
+            document.getElementById('userDropdown').classList.toggle('active');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.user-menu')) {
+                document.getElementById('userDropdown')?.classList.remove('active');
             }
         });
-        
-        function displayResults(data) {
-            const results = document.getElementById('results');
+
+        // Page navigation
+        function showPage(page) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.navbar-links a').forEach(a => a.classList.remove('active'));
             
-            let html = `
-                <h3>📊 Scan Results for ${data.url}</h3>
-                <p><strong>Risk Level:</strong> ${data.risk_score_summary?.overall_risk_level?.toUpperCase() || 'UNKNOWN'}</p>
-                <p><strong>Total Risk Score:</strong> ${data.risk_score_summary?.total_risk_score || 0}</p>
-            `;
-            
-            if (data.vulnerabilities && data.vulnerabilities.length > 0) {
-                html += '<h4>🚨 Vulnerabilities Found:</h4>';
-                data.vulnerabilities.forEach(vuln => {
-                    const severity = vuln.severity || 'low';
-                    html += `
-                        <div class="vulnerability ${severity}">
-                            <strong>${vuln.vulnerability_type?.replace('_', ' ').toUpperCase()}</strong><br>
-                            <small>Severity: ${severity.toUpperCase()} | Confidence: ${(vuln.confidence || 0).toFixed(2)}</small><br>
-                            <strong>Recommendation:</strong> ${vuln.recommendation || 'N/A'}
-                        </div>
-                    `;
-                });
-            } else {
-                html += '<p>✅ No significant vulnerabilities detected!</p>';
+            // Show selected page
+            const pageEl = document.getElementById(page + 'Page');
+            if (pageEl) {
+                pageEl.classList.add('active');
             }
             
-            results.innerHTML = html;
+            // Update nav
+            const navLink = document.querySelector(`.navbar-links a[data-page="${page}"]`);
+            if (navLink) {
+                navLink.classList.add('active');
+            }
+            
+            // Load page data
+            if (page === 'dashboard') {
+                loadDashboard();
+            } else if (page === 'scans') {
+                loadScans();
+            } else if (page === 'settings') {
+                loadSettings();
+            }
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
         }
+
+        // Dashboard
+        async function loadDashboard() {
+            if (!AuthService.isLoggedIn()) {
+                showAuthModal('login');
+                return;
+            }
+            
+            const user = AuthService.getCurrentUser();
+            const stats = await ScanService.getUserStats(user.uid);
+            
+            if (stats.success) {
+                document.getElementById('totalScans').textContent = stats.stats.totalScans;
+                document.getElementById('criticalFindings').textContent = stats.stats.criticalFindings;
+                document.getElementById('highFindings').textContent = stats.stats.highFindings;
+                document.getElementById('completedScans').textContent = stats.stats.completedScans;
+            }
+            
+            // Load recent scans
+            const scans = await ScanService.getUserScans(user.uid, 5);
+            if (scans.success) {
+                displayRecentScans(scans.scans);
+            }
+        }
+
+        function displayRecentScans(scans) {
+            const container = document.getElementById('recentScans');
+            if (!scans || scans.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--neutral-500); padding: 32px;">No scans yet. Start your first scan!</p>';
+                return;
+            }
+            
+            container.innerHTML = scans.map(scan => `
+                <div class="vuln-item" style="cursor: pointer;" onclick="viewScan('${scan.id}')">
+                    <span class="scan-status ${scan.status}">${scan.status}</span>
+                    <div class="vuln-info">
+                        <h4>${scan.targetUrl}</h4>
+                        <p>${scan.scanMode} • ${new Date(scan.startedAt).toLocaleDateString()}</p>
+                    </div>
+                    <div class="vuln-confidence">
+                        ${scan.summary?.total_risk_score || 0} risk score
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Scans page
+        async function loadScans() {
+            if (!AuthService.isLoggedIn()) {
+                showAuthModal('login');
+                return;
+            }
+            
+            const user = AuthService.getCurrentUser();
+            const scans = await ScanService.getUserScans(user.uid, 100);
+            
+            if (scans.success) {
+                displayAllScans(scans.scans);
+            }
+        }
+
+        function displayAllScans(scans) {
+            const container = document.getElementById('scansTableBody');
+            if (!scans || scans.length === 0) {
+                container.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 32px;">No scans found</td></tr>';
+                return;
+            }
+            
+            container.innerHTML = scans.map(scan => `
+                <tr>
+                    <td><span class="url-cell">${scan.targetUrl}</span></td>
+                    <td>${scan.scanMode}</td>
+                    <td><span class="scan-status ${scan.status}">${scan.status}</span></td>
+                    <td>${scan.summary?.total_risk_score || 0}</td>
+                    <td>${new Date(scan.startedAt).toLocaleDateString()}</td>
+                    <td>
+                        <div class="scan-actions">
+                            <button class="btn btn-outline btn-sm" onclick="viewScan('${scan.id}')">View</button>
+                            <button class="btn btn-outline btn-sm" onclick="deleteScan('${scan.id}')">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function viewScan(scanId) {
+            const scan = await ScanService.getScan(scanId);
+            if (scan.success) {
+                displayResults(scan.scan, scan.scan.targetUrl, scan.scan.scanMode);
+                showPage('home');
+            }
+        }
+
+        async function deleteScan(scanId) {
+            if (confirm('Are you sure you want to delete this scan?')) {
+                await ScanService.deleteScan(scanId);
+                loadScans();
+            }
+        }
+
+        // Settings page
+        async function loadSettings() {
+            if (!AuthService.isLoggedIn()) {
+                showAuthModal('login');
+                return;
+            }
+            
+            const user = AuthService.getCurrentUser();
+            document.getElementById('settingsName').value = user.fullName || '';
+            document.getElementById('settingsEmail').value = user.email || '';
+            document.getElementById('settingsEmail').disabled = true;
+            
+            // Load notification preferences
+            const userData = await AuthService.getUserData(user.uid);
+            if (userData && userData.notificationPreferences) {
+                document.getElementById('toggleEmailAlerts').checked = userData.notificationPreferences.emailAlerts;
+                document.getElementById('toggleScanCompletion').checked = userData.notificationPreferences.scanCompletion;
+                document.getElementById('toggleWeeklyReports').checked = userData.notificationPreferences.weeklyReports;
+            }
+        }
+
+        async function saveSettings() {
+            const user = AuthService.getCurrentUser();
+            const fullName = document.getElementById('settingsName').value;
+            
+            await AuthService.updateProfile(user.uid, { fullName: fullName });
+            
+            const prefs = {
+                emailAlerts: document.getElementById('toggleEmailAlerts').checked,
+                scanCompletion: document.getElementById('toggleScanCompletion').checked,
+                weeklyReports: document.getElementById('toggleWeeklyReports').checked
+            };
+            
+            await AuthService.updateNotificationPreferences(user.uid, prefs);
+            alert('Settings saved successfully!');
+        }
+
+        // Scan form with auth and save
+        document.getElementById('scanForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const url = document.getElementById('urlInput').value;
+            const scanMode = document.getElementById('scanMode').value;
+            const scanBtn = document.getElementById('scanBtn');
+            const scanBtnText = document.getElementById('scanBtnText');
+            const scanBtnLoading = document.getElementById('scanBtnLoading');
+            
+            // Check if user is logged in for saving
+            const isLoggedIn = AuthService.isLoggedIn();
+            
+            // Disable button and show loading
+            scanBtn.disabled = true;
+            scanBtnText.style.display = 'none';
+            scanBtnLoading.style.display = 'inline-flex';
+            
+            // Hide previous results, show loading section
+            document.getElementById('results').classList.remove('active');
+            document.getElementById('loading').classList.add('active');
+            
+            const loadingTexts = [
+                'Initializing scan...',
+                'Crawling website...',
+                'Testing for vulnerabilities...',
+                'Analyzing results...',
+                'Generating report...'
+            ];
+            
+            let textIndex = 0;
+            const loadingInterval = setInterval(() => {
+                document.getElementById('loadingText').textContent = loadingTexts[textIndex];
+                textIndex = (textIndex + 1) % loadingTexts.length;
+            }, 3000);
+            
+            try {
+                const response = await fetch(`/scan?url=${encodeURIComponent(url)}&scan_mode=${encodeURIComponent(scanMode)}`);
+                const data = await response.json();
+                
+                clearInterval(loadingInterval);
+                document.getElementById('loading').classList.remove('active');
+                
+                // Re-enable button
+                scanBtn.disabled = false;
+                scanBtnText.style.display = 'inline-flex';
+                scanBtnLoading.style.display = 'none';
+                
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                } else {
+                    // Show results
+                    displayResults(data, url, scanMode);
+                    
+                    // Save scan if logged in
+                    if (isLoggedIn) {
+                        const user = AuthService.getCurrentUser();
+                        const saveResult = await ScanService.saveScan(user.uid, {
+                            targetUrl: url,
+                            scanMode: scanMode,
+                            summary: data.risk_score_summary,
+                            riskScore: data.risk_score_summary?.total_risk_score || 0
+                        });
+                        if (saveResult.success) {
+                            currentScanId = saveResult.scanId;
+                            // Update scan with results
+                            await ScanService.updateScanResults(saveResult.scanId, data);
+                        }
+                    } else {
+                        // Show signup prompt for anonymous users
+                        showSignupPrompt();
+                    }
+                }
+            } catch (error) {
+                clearInterval(loadingInterval);
+                document.getElementById('loading').classList.remove('active');
+                
+                // Re-enable button
+                scanBtn.disabled = false;
+                scanBtnText.style.display = 'inline-flex';
+                scanBtnLoading.style.display = 'none';
+                
+                alert('Error: ' + error.message);
+            }
+        });
+
+        function showSignupPrompt() {
+            const resultsSection = document.getElementById('results');
+            const prompt = document.createElement('div');
+            prompt.className = 'signup-prompt';
+            prompt.innerHTML = `
+                <h3>Save Your Scan Results</h3>
+                <p>Create an account to save your scan history and access reports anytime.</p>
+                <button class="btn btn-primary" onclick="showAuthModal('signup')">Sign Up Free</button>
+            `;
+            resultsSection.appendChild(prompt);
+        }
+
+        // Mode tooltip updates
+        const modeDescriptions = {
+            'fast': 'Fast scan for common vulnerabilities (~2 min)',
+            'stealth': 'Evasive scan with stealth techniques (~5 min)',
+            'deep': 'Comprehensive scan with all checks (~10 min)'
+        };
+
+        document.getElementById('scanMode').addEventListener('change', function() {
+            document.getElementById('modeTooltip').textContent = modeDescriptions[this.value];
+        });
+
+        let vulnChart = null;
+
+        function displayResults(data, url, scanMode) {
+            document.getElementById('resultsTitle').textContent = `Scan Results for ${url}`;
+            document.getElementById('results').classList.add('active');
+            
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+            
+            // Calculate severity counts
+            const counts = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
+            data.vulnerabilities?.forEach(v => {
+                const sev = (v.severity || 'low').toLowerCase();
+                if (counts.hasOwnProperty(sev)) counts[sev]++;
+            });
+            
+            // Update summary cards
+            const riskLevel = data.risk_score_summary?.overall_risk_level || 'unknown';
+            document.getElementById('summaryCards').innerHTML = `
+                <div class="summary-card">
+                    <h4>Risk Level</h4>
+                    <div class="value" style="text-transform: capitalize;">${riskLevel}</div>
+                </div>
+                <div class="summary-card critical">
+                    <h4>Critical</h4>
+                    <div class="value">${counts.critical}</div>
+                </div>
+                <div class="summary-card high">
+                    <h4>High</h4>
+                    <div class="value">${counts.high}</div>
+                </div>
+                <div class="summary-card medium">
+                    <h4>Medium</h4>
+                    <div class="value">${counts.medium}</div>
+                </div>
+                <div class="summary-card low">
+                    <h4>Low</h4>
+                    <div class="value">${counts.low}</div>
+                </div>
+            `;
+            
+            // Calculate health score
+            const healthScore = Math.max(0, 100 - (counts.critical * 20) - (counts.high * 10) - (counts.medium * 5) - (counts.low * 2));
+            const healthEl = document.getElementById('healthScore');
+            let healthClass = 'good';
+            if (healthScore < 50) healthClass = 'danger';
+            else if (healthScore < 75) healthClass = 'warning';
+            healthEl.innerHTML = `
+                <div class="score ${healthClass}">${healthScore}</div>
+                <div class="label">Health Score</div>
+            `;
+            
+            // Chart
+            const ctx = document.getElementById('vulnChart').getContext('2d');
+            if (vulnChart) vulnChart.destroy();
+            
+            vulnChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
+                    datasets: [{
+                        data: [counts.critical, counts.high, counts.medium, counts.low, counts.info],
+                        backgroundColor: ['#EF4444', '#F59E0B', '#EAB308', '#10B981', '#1E3A8A'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: { family: 'Inter', size: 12 }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+            
+            // Vulnerability list
+            const vulnList = document.getElementById('vulnList');
+            if (!data.vulnerabilities || data.vulnerabilities.length === 0) {
+                vulnList.innerHTML = `
+                    <div class="no-vulns">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                        <h3>No Vulnerabilities Detected</h3>
+                        <p>Great job! No security issues were found during this scan.</p>
+                    </div>
+                `;
+            } else {
+                vulnList.innerHTML = data.vulnerabilities.map((vuln, i) => `
+                    <div class="vuln-item" onclick="toggleVulnDetails(${i})">
+                        <span class="severity-pill ${(vuln.severity || 'low').toLowerCase()}">${vuln.severity || 'low'}</span>
+                        <div class="vuln-info">
+                            <h4>${(vuln.vulnerability_type || '').replace(/_/g, ' ').toUpperCase()}</h4>
+                            <p>Confidence: ${((vuln.confidence || 0) * 100).toFixed(0)}%</p>
+                        </div>
+                        <div class="vuln-confidence">
+                            ${vuln.scanner_name || ''}
+                        </div>
+                        <div class="vuln-expand">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="vuln-details" id="vulnDetails${i}">
+                        <h5>Evidence</h5>
+                        <pre>${JSON.stringify(vuln.evidence || {}, null, 2)}</pre>
+                        <h5>Recommendation</h5>
+                        <div class="recommendation">${vuln.recommendation || 'No specific recommendation available.'}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function toggleVulnDetails(index) {
+            const details = document.getElementById(`vulnDetails${index}`);
+            details.classList.toggle('active');
+        }
+
+        function exportReport(format) {
+            alert(`Export to ${format.toUpperCase()} - This feature will be available in the full version.`);
+        }
+
+        function showSampleReport() {
+            const sampleData = {
+                url: "https://example.com",
+                risk_score_summary: {
+                    overall_risk_level: "high",
+                    total_risk_score: 75,
+                    severity_breakdown: { critical: 2, high: 3, medium: 5, low: 4 }
+                },
+                vulnerabilities: [
+                    { vulnerability_type: "sql_injection", severity: "critical", confidence: 0.92, evidence: { parameter: "id", payload: "' UNION SELECT NULL--" }, recommendation: "Use parameterized queries", scanner_name: "sql_injection" },
+                    { vulnerability_type: "xss", severity: "high", confidence: 0.85, evidence: { parameter: "search", payload: "<img src=x onerror=alert(1)>" }, recommendation: "Implement Content Security Policy", scanner_name: "xss" },
+                    { vulnerability_type: "open_redirect", severity: "medium", confidence: 0.78, evidence: { parameter: "next", payload: "https://evil.com" }, recommendation: "Validate redirect URLs", scanner_name: "open_redirect" }
+                ]
+            };
+            displayResults(sampleData, "https://example.com", "deep");
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Smooth scroll for nav links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
     </script>
 </body>
 </html>

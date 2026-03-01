@@ -17,6 +17,10 @@ def index():
 @main_bp.route('/scan')
 def web_scan():
     url = request.args.get('url')
+    scan_mode = request.args.get('scan_mode', 'fast')
+    
+    if scan_mode not in ['fast', 'stealth', 'deep']:
+        scan_mode = 'fast'
     
     if not url:
         return jsonify({"error": "URL parameter is required"}), 400
@@ -28,7 +32,7 @@ def web_scan():
         scan_id = str(uuid.uuid4())
         scan_context = {"url": url, "scan_id": scan_id}
         
-        raw_vulnerabilities = orchestrate_scan(scan_context)
+        raw_vulnerabilities = orchestrate_scan(scan_context, scan_mode=scan_mode)
         
         actual_vulnerabilities = [
             v for v in raw_vulnerabilities 

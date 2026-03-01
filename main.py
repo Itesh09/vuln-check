@@ -12,11 +12,11 @@ from app.services.ai_analyzer import ai_analyze_results
 from app.models.scan_result import create_empty_scan_result, ScanResult, Vulnerability
 
 
-def run_cli_scan(url: str):
+def run_cli_scan(url: str, scan_mode: str = "fast"):
     """
     Executes a vulnerability scan via CLI and prints a human-readable report.
     """
-    print(f"Starting scan on {url}...")
+    print(f"Starting {scan_mode} scan on {url}...")
 
     if not is_processable_url(url):
         print(f"Error: Cannot process URL: '{url}'. Please enter a valid and supported URL (http/https).")
@@ -25,8 +25,7 @@ def run_cli_scan(url: str):
     scan_id = str(uuid.uuid4())
     scan_context = {"url": url, "scan_id": scan_id}
     
-    # Orchestrate the scan
-    raw_vulnerabilities: list[Vulnerability] = orchestrate_scan(scan_context)
+    raw_vulnerabilities: list[Vulnerability] = orchestrate_scan(scan_context, scan_mode=scan_mode)
     
     # Filter out non-vulnerabilities (e.g., info-level or disabled scanner messages)
     # and errors from the orchestrator
@@ -87,6 +86,8 @@ def run_cli_scan(url: str):
 def main():
     parser = argparse.ArgumentParser(description="Website Vulnerability Finder CLI and Server.")
     parser.add_argument("-u", "--url", type=str, help="URL to scan for vulnerabilities.")
+    parser.add_argument("--scan-mode", type=str, default="fast", choices=["fast", "stealth", "deep"],
+                        help="Scan mode: fast (quick scan), stealth (slow, evasive), deep (comprehensive).")
     parser.add_argument("--run-server", action="store_true", help="Run the Flask web server.")
     parser.add_argument("--host", type=str, default="127.0.0.1", help="Host address for the Flask server.")
     parser.add_argument("--port", type=int, default=5000, help="Port for the Flask server.")
@@ -94,7 +95,7 @@ def main():
     args = parser.parse_args()
 
     if args.url:
-        run_cli_scan(args.url)
+        run_cli_scan(args.url, args.scan_mode)
     elif args.run_server:
         app = create_app()
 
